@@ -55,7 +55,7 @@ app = mcp
 store = QuizStore()
 
 
-@mcp.tool()
+@mcp.tool(description="Create a map-based geography quiz using VWorld satellite imagery. Generates a quiz with specified location and type.")
 async def create_map_quiz(
     condition: str,
     quiz_type: str,
@@ -77,9 +77,12 @@ async def create_map_quiz(
         lon: 경도 (문제 유형이 행정구역일 경우 청사 위치를 기준으로 선정)
         zoom: 지도 확대 레벨 (기준 절대 준수)
             - 한반도 내: quiz_type에 따라 다음 기준을 적용
-                광역시·도: 11-12
-                시·군·구: 13-14
-                읍·면·동: 15-16
+                도: 11
+                특별광역시: 12
+                시·군: 13
+                구: 14
+                읍·면:15 
+                동:16
                 자연지형은 크기가 작을수록 값을 높임
             - 외국: 8(대상이 한반도보다 클 경우 7), 외국의 경우 7-8 이외의 숫자는 에러 발생
         tags: 태그 목록 (선택)
@@ -129,7 +132,7 @@ async def create_map_quiz(
         raise ValueError(error_msg)
 
 
-@mcp.tool()
+@mcp.tool(description="Request hints for a specific quiz by quiz_id. Provides clues without revealing the exact answer.")
 def request_hint(quiz_id: str) -> Dict[str, str]:
     """quiz_id의 힌트를 제공합니다 (SSE 스트리밍 방식).
     힌트에 정답과 동일하거나 유사한 단어가 포함될 경우 다른 힌트를 제시하시오.
@@ -149,7 +152,7 @@ def request_hint(quiz_id: str) -> Dict[str, str]:
     except Exception as e:
         raise ValueError(f"오류 발생: {str(e)}")
 
-@mcp.tool()
+@mcp.tool(description="Get the answer for a specific quiz by quiz_id. Returns complete answer with map link and explanation.")
 def request_answer(quiz_id: str) -> Dict[str, object]:
     """정답(하이브리드 지도 링크 및 해설)을 제공합니다 (SSE 스트리밍 방식)."""
     try:

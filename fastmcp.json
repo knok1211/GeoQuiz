@@ -1,11 +1,11 @@
 {
-  "entrypoint": "server.py:app",
+  "entrypoint": "server.py",
   "environment": {
     "dependencies": [
       "geopy>=2.3.0",
       "requests>=2.28.0"
     ]
   },
-  "name": "GeoQuiz MCP Server (VWorld)",
-  "description": "MCP server for VWorld satellite-based map quizzes with Streamable HTTP SSE support"
+  "name": "GeoQuiz MCP Server",
+  "description": "VWorld satellite-based map quiz server using Korean geographic data"
 }
