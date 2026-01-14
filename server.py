@@ -7,7 +7,6 @@ from typing import Dict, AsyncGenerator
 from fastmcp import FastMCP
 from geopy.geocoders import Nominatim
 import asyncio
-from starlette.responses import JSONResponse
 
 
 VWORLD_API_KEY = os.getenv("VWORLD_API_KEY", "DEMO_KEY")
@@ -193,60 +192,12 @@ def request_answer(quiz_id: str) -> Dict[str, object]:
         return result
     except Exception as e:
         raise ValueError(f"오류 발생: {str(e)}")
-# /.well-known/mcp/server-card.json 엔드포인트
-async def server_card_handler(request):
-    """PlayMCP 호환 서버 카드 메타데이터 제공"""
-    return JSONResponse({
-        "mcpVersion": "2024-11-05",
-        "name": "GeoQuiz MCP Server (VWorld)",
-        "version": "1.0.0",
-        "description": "VWorld satellite-based map quiz server with Streamable HTTP support",
-        "author": "GeoQuiz Team",
-        "license": "MIT",
-        "homepage": "https://geoquiz.fastmcp.app",
-        "tools": [
-            {
-                "name": "create_map_quiz",
-                "description": "Create a map-based geography quiz using VWorld satellite imagery",
-                "inputSchema": {
-                    "type": "object",
-                    "properties": {
-                        "condition": {"type": "string"},
-                        "iskorea": {"type": "boolean"},
-                        "quiz_type": {"type": "string"},
-                        "lat": {"type": "number"},
-                        "lon": {"type": "number"},
-                        "zoom": {"type": "integer"}
-                    },
-                    "required": ["condition", "iskorea", "quiz_type", "lat", "lon"]
-                }
-            },
-            {
-                "name": "request_hint",
-                "description": "Request hints for a quiz",
-                "inputSchema": {
-                    "type": "object",
-                    "properties": {"quiz_id": {"type": "string"}},
-                    "required": ["quiz_id"]
-                }
-            },
-            {
-                "name": "request_answer",
-                "description": "Get the answer for a quiz",
-                "inputSchema": {
-                    "type": "object",
-                    "properties": {"quiz_id": {"type": "string"}},
-                    "required": ["quiz_id"]
-                }
-            }
-        ]
-    })
 
 
 if __name__ == "__main__":
     # Streamable HTTP 방식으로 MCP 서버 실행
     # 배포 도메인: https://geoquiz.fastmcp.app/mcp
-    # PlayMCP 호환 설정
+    # Stateless 방식으로 작동
     mcp.run(
         transport="streamable-http",
         path="/mcp",

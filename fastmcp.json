@@ -7,5 +7,81 @@
     ]
   },
   "name": "GeoQuiz MCP Server",
-  "description": "VWorld satellite-based map quiz server using Korean geographic data"
+  "description": "VWorld satellite-based map quiz server using Korean geographic data",
+  "version": "1.0.0",
+  "author": "GeoQuiz Team",
+  "license": "MIT",
+  "homepage": "https://geoquiz.fastmcp.app",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/geoquiz/server"
+  },
+  "tools": [
+    {
+      "name": "create_map_quiz",
+      "description": "Create a map-based geography quiz using VWorld satellite imagery. Generates a quiz with specified location and type.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "condition": {
+            "type": "string",
+            "description": "User requested quiz condition"
+          },
+          "iskorea": {
+            "type": "boolean",
+            "description": "Whether the location is within Korean peninsula"
+          },
+          "quiz_type": {
+            "type": "string",
+            "description": "Type of answer (administrative division or natural terrain)"
+          },
+          "lat": {
+            "type": "number",
+            "description": "Latitude coordinate"
+          },
+          "lon": {
+            "type": "number",
+            "description": "Longitude coordinate"
+          },
+          "zoom": {
+            "type": "integer",
+            "description": "Map zoom level (10-16 for Korea, 7-8 for overseas)"
+          },
+          "tags": {
+            "type": "array",
+            "description": "Optional tags"
+          }
+        },
+        "required": ["condition", "iskorea", "quiz_type", "lat", "lon"]
+      }
+    },
+    {
+      "name": "request_hint",
+      "description": "Request hints for a specific quiz by quiz_id. Provides clues without revealing the exact answer.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "quiz_id": {
+            "type": "string",
+            "description": "Quiz ID"
+          }
+        },
+        "required": ["quiz_id"]
+      }
+    },
+    {
+      "name": "request_answer",
+      "description": "Get the answer for a specific quiz by quiz_id. Returns complete answer with map link and explanation.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "quiz_id": {
+            "type": "string",
+            "description": "Quiz ID"
+          }
+        },
+        "required": ["quiz_id"]
+      }
+    }
+  ]
 }
