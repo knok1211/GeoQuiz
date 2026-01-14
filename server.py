@@ -205,7 +205,7 @@ async def create_map_quiz(
     lon: float,
     zoom: int = 12,
     tags: list = None,
-) -> Dict[str, object]:
+) -> str:
     """클라이언트 LLM이 선택한 위치로 지도 퀴즈를 생성합니다 (Streamable HTTP 방식).
 
     Args:
