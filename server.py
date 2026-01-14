@@ -173,4 +173,4 @@ def request_answer(quiz_id: str) -> Dict[str, object]:
 
 
 if __name__ == "__main__":
-    mcp.run()
+    mcp.run(transport="sse")
