@@ -34,15 +34,22 @@ class QuizStore:
 
     def __init__(self) -> None:
         self._store: Dict[str, QuizRecord] = {}
+        self._last_answer: str = ""  # 이전 정답 주소 저장
 
     def create(self, location_data: Dict) -> QuizRecord:
         """클라이언트가 제공한 위치 데이터로 퀴즈 생성"""
+        # 이전 문제와 정답이 동일한지 확인
+        current_address = location_data.get("address", "")
+        if self._last_answer and current_address == self._last_answer:
+            raise ValueError("이전 문제와 동일한 정답입니다. 다른 위치를 선택해주세요.")
+        
         quiz_id = f"quiz-{len(self._store) + 1}"
         record: QuizRecord = {
             "quiz_id": quiz_id,
             "candidate": location_data,
         }
         self._store[quiz_id] = record
+        self._last_answer = current_address  # 현재 정답을 저장
         return record
 
     def get(self, quiz_id: str) -> QuizRecord:
@@ -197,7 +204,7 @@ def get_deployment_info() -> str:
 
 
 @mcp.tool(description=
-          """클라이언트 LLM이 선택한 위치로 지도 퀴즈를 생성합니다.
+          """클라이언트 LLM이 선택한 위치로 새로운 지도 퀴즈를 생성합니다.
     Args:
         condition: 사용자가 요청한 문제의 조건
             - 문제 조건으로 특정 지역이 지정되면 정답 유형을 그에 속한 하위 행정구역이나 자연지형으로 할 것 
@@ -285,8 +292,8 @@ async def create_map_quiz(
         raise ValueError(error_msg)
 
 
-@mcp.tool(description="quiz_id의 힌트를 제공합니다. 힌트에 정답과 동일하거나 유사한 단어가 포함될 경우 다른 힌트를 제시합니다.")
-def request_hint(quiz_id: str, hint: str) -> Dict[str, object]:
+@mcp.tool(description="quiz_id의 힌트 요청에 대한 힌트 키워드를 제공합니다. 힌트에 정답과 동일하거나 유사한 단어가 포함될 경우 다른 힌트를 제시합니다.")
+def request_hint(quiz_id: str, request: str, hint: str) -> Dict[str, object]:
     try:
         print(f"[GeoQuiz] request_hint 호출: quiz_id={quiz_id}")
         record = store.get(quiz_id)
@@ -300,6 +307,7 @@ def request_hint(quiz_id: str, hint: str) -> Dict[str, object]:
             "quiz_type": quiz_type,
             "center": {"lon": lon, "lat": lat},
             "condition": condition,
+            "request": request,
             "hint": hint,
         }
         return hint
