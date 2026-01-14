@@ -1,4 +1,4 @@
-"""GeoQuiz MCP server for VWorld satellite-based map quizzes with Streamable HTTP SSE support."""
+"""GeoQuiz MCP server for VWorld satellite-based map quizzes with Streamable HTTP support."""
 
 import json
 import os
@@ -7,6 +7,7 @@ from typing import Dict, AsyncGenerator
 from fastmcp import FastMCP
 from geopy.geocoders import Nominatim
 import asyncio
+from starlette.responses import JSONResponse
 
 
 VWORLD_API_KEY = os.getenv("VWORLD_API_KEY", "DEMO_KEY")
@@ -65,7 +66,7 @@ async def create_map_quiz(
     zoom: int = 12,
     tags: list = None,
 ) -> str:
-    """클라이언트 LLM이 선택한 위치로 지도 퀴즈를 생성합니다 (SSE 스트리밍 방식).
+    """클라이언트 LLM이 선택한 위치로 지도 퀴즈를 생성합니다 (Streamable HTTP 방식).
 
     Args:
         condition: 사용자가 요청한 문제의 조건
@@ -96,13 +97,13 @@ async def create_map_quiz(
         이후 이미지 중점을 기준으로 출제했다는 것을 설명하고, '어떤 (국가/행정구역명, 시도/시군구/읍면동, 산/강/섬/바다 등)인가요?' 처럼 세부 정답 유형을 설명하시오.)
     """
     try:
+        print(f"[GeoQuiz] create_map_quiz 호출: condition={condition}, lat={lat}, lon={lon}, zoom={zoom}")
+        
         # 위치 검증
-
         if iskorea is False and not (7 <= zoom <= 8):
             raise ValueError("외국 위치의 경우 zoom 값은 7 또는 8이어야 합니다.")
         elif iskorea is True and not (10 <= zoom <= 16):
             raise ValueError("한반도 내 위치의 경우 zoom 값은 10에서 16 사이여야 합니다.")
-
 
         geolocator = Nominatim(user_agent="geoquiz_validator")
         location = geolocator.reverse((lat, lon), language="ko")
@@ -146,10 +147,11 @@ async def create_map_quiz(
 
 @mcp.tool(description="Request hints for a specific quiz by quiz_id. Provides clues without revealing the exact answer.")
 def request_hint(quiz_id: str) -> Dict[str, str]:
-    """quiz_id의 힌트를 제공합니다 (SSE 스트리밍 방식).
+    """quiz_id의 힌트를 제공합니다 (Streamable HTTP 방식).
     힌트에 정답과 동일하거나 유사한 단어가 포함될 경우 다른 힌트를 제시하시오.
     """
     try:
+        print(f"[GeoQuiz] request_hint 호출: quiz_id={quiz_id}")
         record = store.get(quiz_id)
         candidate = record["candidate"]
         quiz_type = candidate.get("quiz_type", "미지정")
@@ -168,8 +170,9 @@ def request_hint(quiz_id: str) -> Dict[str, str]:
 
 @mcp.tool(description="Get the answer for a specific quiz by quiz_id. Returns complete answer with map link and explanation.")
 def request_answer(quiz_id: str) -> Dict[str, object]:
-    """정답(하이브리드 지도 링크 및 해설)을 제공합니다 (SSE 스트리밍 방식)."""
+    """정답(하이브리드 지도 링크 및 해설)을 제공합니다 (Streamable HTTP 방식)."""
     try:
+        print(f"[GeoQuiz] request_answer 호출: quiz_id={quiz_id}")
         record = store.get(quiz_id)
         candidate = record["candidate"]
         lon, lat = candidate["lon"], candidate["lat"]
@@ -190,8 +193,61 @@ def request_answer(quiz_id: str) -> Dict[str, object]:
         return result
     except Exception as e:
         raise ValueError(f"오류 발생: {str(e)}")
+# /.well-known/mcp/server-card.json 엔드포인트
+async def server_card_handler(request):
+    """PlayMCP 호환 서버 카드 메타데이터 제공"""
+    return JSONResponse({
+        "mcpVersion": "2024-11-05",
+        "name": "GeoQuiz MCP Server (VWorld)",
+        "version": "1.0.0",
+        "description": "VWorld satellite-based map quiz server with Streamable HTTP support",
+        "author": "GeoQuiz Team",
+        "license": "MIT",
+        "homepage": "https://geoquiz.fastmcp.app",
+        "tools": [
+            {
+                "name": "create_map_quiz",
+                "description": "Create a map-based geography quiz using VWorld satellite imagery",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "condition": {"type": "string"},
+                        "iskorea": {"type": "boolean"},
+                        "quiz_type": {"type": "string"},
+                        "lat": {"type": "number"},
+                        "lon": {"type": "number"},
+                        "zoom": {"type": "integer"}
+                    },
+                    "required": ["condition", "iskorea", "quiz_type", "lat", "lon"]
+                }
+            },
+            {
+                "name": "request_hint",
+                "description": "Request hints for a quiz",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {"quiz_id": {"type": "string"}},
+                    "required": ["quiz_id"]
+                }
+            },
+            {
+                "name": "request_answer",
+                "description": "Get the answer for a quiz",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {"quiz_id": {"type": "string"}},
+                    "required": ["quiz_id"]
+                }
+            }
+        ]
+    })
 
 
 if __name__ == "__main__":
-
-    mcp.run(transport="streamable-http")
+    # Streamable HTTP 방식으로 MCP 서버 실행
+    # 배포 도메인: https://geoquiz.fastmcp.app/mcp
+    # PlayMCP 호환 설정
+    mcp.run(
+        transport="streamable-http",
+        path="/mcp",
+    )
