@@ -95,7 +95,7 @@ async def create_map_quiz(
     try:
         # 위치 검증
         geolocator = Nominatim(user_agent="geoquiz_validator")
-        location = geolocator.reverse(f"{lat}, {lon}", language="ko")
+        location = geolocator.reverse((lat, lon), language="ko")
         
         if location is None:
             raise ValueError("유효하지 않은 좌표입니다. 다시 시도해주세요.")
@@ -179,4 +179,6 @@ def request_answer(quiz_id: str) -> Dict[str, object]:
 
 
 if __name__ == "__main__":
-    mcp.run()
+    # HTTP SSE endpoint로 노출 (PlayMCP 호환)
+    # 배포 도메인: https://geoquiz.fastmcp.app/mcp
+    mcp.run(transport="sse")
