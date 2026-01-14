@@ -52,6 +52,7 @@ class QuizStore:
 
 
 mcp = FastAPI(title="GeoQuiz MCP Server (VWorld) - Streamable HTTP")
+app = mcp
 store = QuizStore()
 
 
