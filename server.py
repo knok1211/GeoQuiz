@@ -152,12 +152,14 @@ def request_hint(quiz_id: str) -> Dict[str, str]:
         record = store.get(quiz_id)
         candidate = record["candidate"]
         quiz_type = candidate.get("quiz_type", "미지정")
-        address = candidate["address"]
+        lon, lat = candidate["lon"], candidate["lat"]
+        condition = candidate["condition"]
         
         hint: Dict[str, str] = {
             "quiz_id": quiz_id,
             "quiz_type": quiz_type,
-            "address": address,
+            "center": {"lon": lon, "lat": lat},
+            "condition": condition,
         }
         return hint
     except Exception as e:
@@ -190,6 +192,5 @@ def request_answer(quiz_id: str) -> Dict[str, object]:
 
 
 if __name__ == "__main__":
-    # HTTP SSE endpoint로 노출 (PlayMCP 호환)
-    # 배포 도메인: https://geoquiz.fastmcp.app/mcp
-    mcp.run(transport="streamable-http",path="/",)
+
+    mcp.run(transport="streamable-http",path="https://geoquiz.fastmcp.app/mcp",)
