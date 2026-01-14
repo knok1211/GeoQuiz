@@ -83,5 +83,31 @@
         "required": ["quiz_id"]
       }
     }
-  ]
+  ],
+  "resources": [
+    {
+      "uri": "geoquiz://quiz-format",
+      "name": "Quiz Data Structure",
+      "description": "Schema for quiz records containing location data, types, and coordinates",
+      "mimeType": "application/json"
+    },
+    {
+      "uri": "geoquiz://vworld-api",
+      "name": "VWorld Static Image API Reference",
+      "description": "Complete VWorld API documentation with parameters, basemap types, and example URLs",
+      "mimeType": "application/json"
+    },
+    {
+      "uri": "geoquiz://tool-usage-guide",
+      "name": "Tool Usage Guide",
+      "description": "Detailed usage guide for all three GeoQuiz MCP tools with input/output specifications",
+      "mimeType": "application/json"
+    },
+    {
+      "uri": "geoquiz://deployment",
+      "name": "Deployment Configuration",
+      "description": "Server deployment info, requirements, environment variables, and features",
+      "mimeType": "application/json"
+    }
+]
 }

@@ -5,6 +5,7 @@ import os
 from typing import Dict, AsyncGenerator
 
 from fastmcp import FastMCP
+from fastmcp.resources import Resource, ResourceTemplate
 from geopy.geocoders import Nominatim
 import asyncio
 
@@ -55,6 +56,146 @@ app = mcp
 store = QuizStore()
 
 
+# ============================================================================
+# RESOURCES - VWorld 스키마, 퀴즈 포맷, API 문서
+# ============================================================================
+
+QUIZ_SCHEMA_RESOURCE = """{
+  "quiz_record": {
+    "quiz_id": "string (e.g., quiz-1, quiz-2)",
+    "candidate": {
+      "condition": "string - 사용자 요청 문제 조건",
+      "address": "string - 역지오코딩으로 얻은 주소",
+      "quiz_type": "string - 행정구역명(도/시/군/구/읍/면/동) 또는 자연지형(산/강/섬)",
+      "lat": "float - 위도",
+      "lon": "float - 경도",
+      "zoom": "int - VWorld 지도 확대 레벨",
+      "tags": "array - 선택사항"
+    }
+  }
+}"""
+
+VWORLD_API_RESOURCE = """{
+  "service": "VWorld Static Image API",
+  "endpoint": "https://api.vworld.kr/req/image",
+  "documentation": "https://www.vworld.kr/dev/v4dv_apiDocumentation_v3.jsp?menuId=20041",
+  "parameters": {
+    "service": "always 'image' for static maps",
+    "request": "always 'getmap' for static maps",
+    "key": "string - Your VWorld API Key (from key.env)",
+    "center": "string - 'lon,lat' format, e.g., '127.0276,37.4979'",
+    "zoom": "int - map zoom level (7-16 typical)",
+    "basemap": "string - 'PHOTO' for satellite, 'BASE' for base map",
+    "format": "string - 'png' or 'jpeg'",
+    "size": "string - 'width,height' format, e.g., '1024,1024'"
+  },
+  "basemap_types": {
+    "PHOTO": "Satellite/aerial imagery (recommended for GeoQuiz)",
+    "BASE": "Standard map with labels",
+    "GRAY": "Grayscale base map",
+    "MIDNIGHT": "Dark themed map"
+  },
+  "example_url": "https://api.vworld.kr/req/image?service=image&request=getmap&key=YOUR_KEY&center=127.0276,37.4979&zoom=15&basemap=PHOTO&format=png&size=1024,1024"
+}"""
+
+TOOL_USAGE_GUIDE = """{
+  "tools": [
+    {
+      "name": "create_map_quiz",
+      "description": "VWorld 위성이미지로 지도 퀴즈 생성",
+      "usage": "LLM이 위치와 문제 유형을 선택하면 이 도구가 지도 이미지 URL을 생성합니다",
+      "returns": {
+        "type": "string message",
+        "contains": [
+          "quiz_id: 향후 hint/answer 요청에 필요",
+          "markdown link: 지도 이미지 접근 URL",
+          "question_template: '어떤 (세부유형)인가요?' 형식"
+        ]
+      }
+    },
+    {
+      "name": "request_hint",
+      "description": "특정 퀴즈의 힌트 제공",
+      "input": {
+        "quiz_id": "create_map_quiz에서 반환된 quiz_id"
+      },
+      "returns": {
+        "quiz_id": "string",
+        "quiz_type": "string - 정답 유형",
+        "center": "object {lon: float, lat: float}",
+        "condition": "string - 원본 요청"
+      }
+    },
+    {
+      "name": "request_answer",
+      "description": "퀴즈의 정답 및 상세 정보 제공",
+      "input": {
+        "quiz_id": "create_map_quiz에서 반환된 quiz_id"
+      },
+      "returns": {
+        "quiz_id": "string",
+        "quiz_type": "string - 정답 유형",
+        "center": "object {lon: float, lat: float}",
+        "google_maps_url": "string - 정답 위치 지도 링크",
+        "condition": "string - 원본 요청",
+        "address": "string - 역지오코딩 주소"
+      }
+    }
+  ]
+}"""
+
+DEPLOYMENT_INFO = """{
+  "server": "GeoQuiz MCP Server (VWorld)",
+  "version": "1.0.0",
+  "transport": "Streamable HTTP",
+  "endpoint": "https://geoquiz.fastmcp.app/mcp",
+  "architecture": "Stateless via Streamable HTTP (MCP protocol level)",
+  "session_management": "In-memory QuizStore (quiz_id-based access)",
+  "requirements": {
+    "python": "3.8+",
+    "fastmcp": ">=0.1.0",
+    "geopy": ">=2.3.0",
+    "requests": ">=2.28.0"
+  },
+  "environment": {
+    "VWORLD_API_KEY": "Set in key.env - Required for VWorld API access",
+    "default": "DEMO_KEY (limited functionality)"
+  },
+  "features": [
+    "Dynamic quiz generation from coordinates",
+    "VWorld satellite image integration",
+    "Korean address reverse geocoding",
+    "Adaptive zoom levels for different administrative divisions",
+    "Google Maps integration for answer verification"
+  ]
+}"""
+
+
+# Register resources
+@mcp.resource("geoquiz://quiz-format")
+def get_quiz_schema() -> str:
+    """Get the quiz record data structure used by GeoQuiz."""
+    return QUIZ_SCHEMA_RESOURCE
+
+
+@mcp.resource("geoquiz://vworld-api")
+def get_vworld_api_docs() -> str:
+    """Get VWorld Static Image API documentation and parameters."""
+    return VWORLD_API_RESOURCE
+
+
+@mcp.resource("geoquiz://tool-usage-guide")
+def get_tool_usage() -> str:
+    """Get detailed usage guide for all GeoQuiz MCP tools."""
+    return TOOL_USAGE_GUIDE
+
+
+@mcp.resource("geoquiz://deployment")
+def get_deployment_info() -> str:
+    """Get deployment configuration and server information."""
+    return DEPLOYMENT_INFO
+
+
 @mcp.tool(description="Create a map-based geography quiz using VWorld satellite imagery. Generates a quiz with specified location and type.")
 async def create_map_quiz(
     condition: str,
@@ -64,7 +205,7 @@ async def create_map_quiz(
     lon: float,
     zoom: int = 12,
     tags: list = None,
-) -> str:
+) -> Dict[str, object]:
     """클라이언트 LLM이 선택한 위치로 지도 퀴즈를 생성합니다 (Streamable HTTP 방식).
 
     Args:
@@ -145,7 +286,7 @@ async def create_map_quiz(
 
 
 @mcp.tool(description="Request hints for a specific quiz by quiz_id. Provides clues without revealing the exact answer.")
-def request_hint(quiz_id: str) -> Dict[str, str]:
+def request_hint(quiz_id: str) -> Dict[str, object]:
     """quiz_id의 힌트를 제공합니다 (Streamable HTTP 방식).
     힌트에 정답과 동일하거나 유사한 단어가 포함될 경우 다른 힌트를 제시하시오.
     """
@@ -157,7 +298,7 @@ def request_hint(quiz_id: str) -> Dict[str, str]:
         lon, lat = candidate["lon"], candidate["lat"]
         condition = candidate["condition"]
         
-        hint: Dict[str, str] = {
+        hint: Dict[str, object] = {
             "quiz_id": quiz_id,
             "quiz_type": quiz_type,
             "center": {"lon": lon, "lat": lat},
