@@ -192,4 +192,4 @@ def request_answer(quiz_id: str) -> Dict[str, object]:
 if __name__ == "__main__":
     # HTTP SSE endpoint로 노출 (PlayMCP 호환)
     # 배포 도메인: https://geoquiz.fastmcp.app/mcp
-    mcp.run(transport="sse")
+    mcp.run(transport="streamable-http",path="/",)
