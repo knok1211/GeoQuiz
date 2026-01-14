@@ -96,10 +96,12 @@ async def create_map_quiz(
     """
     try:
         # 위치 검증
-        if not (11 <= zoom <= 16):
-            raise ValueError("한반도 내 위치의 경우 zoom 값은 11에서 16 사이여야 합니다.")
+
         if iskorea is False and not (7 <= zoom <= 8):
             raise ValueError("외국 위치의 경우 zoom 값은 7 또는 8이어야 합니다.")
+        elif iskorea is True and not (11 <= zoom <= 16):
+            raise ValueError("한반도 내 위치의 경우 zoom 값은 11에서 16 사이여야 합니다.")
+
 
         geolocator = Nominatim(user_agent="geoquiz_validator")
         location = geolocator.reverse((lat, lon), language="ko")
