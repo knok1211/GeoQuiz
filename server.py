@@ -297,8 +297,14 @@ def request_hint(quiz_id: str, request: str)  -> str:
     try:
         print(f"[GeoQuiz] request_hint 호출: quiz_id={quiz_id}")
 
+
+        record = store.get(quiz_id)
+        candidate = record["candidate"]
+        lon, lat = candidate["lon"], candidate["lat"]
+        quiz_type = candidate.get("quiz_type", "미지정")
+
         message = (
-        f"{quiz_id}의 {request} 힌트 제공합니다. 힌트에 정답과 동일하거나 유사한 단어가 포함될 경우 다른 힌트를 제시합니다."
+        f"{quiz_id}: {{\"lon\": {lon}, \"lat\": {lat}}}지점에 속한 {quiz_type}지역의 {request} 힌트 제공합니다. 힌트에 정답과 동일하거나 유사한 단어가 포함될 경우 다른 힌트를 제시합니다."
        )
         return message
     except Exception as e:
