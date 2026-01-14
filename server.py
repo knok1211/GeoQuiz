@@ -204,7 +204,7 @@ def get_deployment_info() -> str:
 
 
 @mcp.tool(description=
-          """클라이언트 LLM이 선택한 위치로 새로운 지도 퀴즈를 생성합니다.
+          """해당 규격에 맞는 랜덤한 지도 퀴즈를 생성합니다.
     Args:
         condition: 사용자가 요청한 문제의 조건
             - 문제 조건으로 특정 지역이 지정되면 정답 유형을 그에 속한 하위 행정구역이나 자연지형으로 할 것 
@@ -283,7 +283,7 @@ async def create_map_quiz(
             "이후 이미지 중점을 기준으로 출제했다는 것을 설명하고, '어떤 (국가/행정구역명, 시도/시군구/읍면동, 산/강/섬/바다 등)인가요?' 처럼 세부 정답 유형을 설명하시오.)"
             f"🗺️ 퀴즈가 생성되었습니다! (ID: {record['quiz_id']})\n"
             f"📍 [지도 열람]({vworld_url})\n\n"
-            f"이미지 한가운데 지점은 어느 {quiz_type}일까요?"
+            f"이미지 한가운데 지점은 어느 {quiz_type}인가요?"
         )
         return message
         
@@ -292,25 +292,15 @@ async def create_map_quiz(
         raise ValueError(error_msg)
 
 
-@mcp.tool(description="quiz_id의 힌트 요청에 대한 힌트 키워드를 제공합니다. 힌트에 정답과 동일하거나 유사한 단어가 포함될 경우 다른 힌트를 제시합니다.")
-def request_hint(quiz_id: str, request: str, hint: str) -> Dict[str, object]:
+@mcp.tool(description="quiz_id의 힌트 요청에 대한 힌트 키워드를 제공합니다.")
+def request_hint(quiz_id: str, request: str)  -> str:
     try:
         print(f"[GeoQuiz] request_hint 호출: quiz_id={quiz_id}")
-        record = store.get(quiz_id)
-        candidate = record["candidate"]
-        quiz_type = candidate.get("quiz_type", "미지정")
-        lon, lat = candidate["lon"], candidate["lat"]
-        condition = candidate["condition"]
-        
-        hint: Dict[str, object] = {
-            "quiz_id": quiz_id,
-            "quiz_type": quiz_type,
-            "center": {"lon": lon, "lat": lat},
-            "condition": condition,
-            "request": request,
-            "hint": hint,
-        }
-        return hint
+
+        message = (
+        f"{quiz_id}의 {request} 힌트 제공합니다. 힌트에 정답과 동일하거나 유사한 단어가 포함될 경우 다른 힌트를 제시합니다."
+       )
+        return message
     except Exception as e:
         raise ValueError(f"오류 발생: {str(e)}")
 
