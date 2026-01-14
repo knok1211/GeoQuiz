@@ -58,6 +58,7 @@ store = QuizStore()
 @mcp.tool(description="Create a map-based geography quiz using VWorld satellite imagery. Generates a quiz with specified location and type.")
 async def create_map_quiz(
     condition: str,
+    iskorea: bool,
     quiz_type: str,
     lat: float,
     lon: float,
@@ -68,7 +69,8 @@ async def create_map_quiz(
 
     Args:
         condition: 사용자가 요청한 문제의 조건
-            - 문제 조건으로 특정 지역이 지정되면 정답 유형을 그에 속한 하위 행정구역이나 자연지형으로 할 것    
+            - 문제 조건으로 특정 지역이 지정되면 정답 유형을 그에 속한 하위 행정구역이나 자연지형으로 할 것 
+        iskorea: 문제 조건이 한반도 내 위치 여부 (True/False)   
         quiz_type: 세부 정답 유형 (정답 자체가 아닌, 정답의 종류)
             - 외국 국가명/대도시·광역행정구역 또는 국내 광역시·도/시·군·구/읍·면·동 등 정답 행정구역의 단위
             - 산/강/섬/바다/호수/사막/빙하 등 정답 자연지형의 종류
@@ -76,15 +78,15 @@ async def create_map_quiz(
         lat: 위도 (문제 유형이 행정구역일 경우 청사 위치를 기준으로 선정)
         lon: 경도 (문제 유형이 행정구역일 경우 청사 위치를 기준으로 선정)
         zoom: 지도 확대 레벨 (기준 절대 준수)
-            - 한반도 내: quiz_type에 따라 다음 기준을 적용
+            - iskorea = True: zoom = (quiz_type에 따라 다음 기준을 적용)
                 도: 11
                 특별광역시: 12
                 시·군: 13
                 구: 14
-                읍·면:15 
+                읍·면:15
                 동:16
                 자연지형은 크기가 작을수록 값을 높임
-            - 외국: 8(대상이 한반도보다 클 경우 7), 외국의 경우 7-8 이외의 숫자는 에러 발생
+            - iskorea = False: zoom = 8(대상이 한반도보다 클 경우 7)
         tags: 태그 목록 (선택)
     
     Returns:
@@ -94,6 +96,11 @@ async def create_map_quiz(
     """
     try:
         # 위치 검증
+        if not (11 <= zoom <= 16):
+            raise ValueError("한반도 내 위치의 경우 zoom 값은 11에서 16 사이여야 합니다.")
+        if iskorea is False and not (7 <= zoom <= 8):
+            raise ValueError("외국 위치의 경우 zoom 값은 7 또는 8이어야 합니다.")
+
         geolocator = Nominatim(user_agent="geoquiz_validator")
         location = geolocator.reverse((lat, lon), language="ko")
         
