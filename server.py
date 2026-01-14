@@ -196,18 +196,8 @@ def get_deployment_info() -> str:
     return DEPLOYMENT_INFO
 
 
-@mcp.tool(description="Create a map-based geography quiz using VWorld satellite imagery. Generates a quiz with specified location and type.")
-async def create_map_quiz(
-    condition: str,
-    iskorea: bool,
-    quiz_type: str,
-    lat: float,
-    lon: float,
-    zoom: int = 12,
-    tags: list = None,
-) -> str:
-    """클라이언트 LLM이 선택한 위치로 지도 퀴즈를 생성합니다 (Streamable HTTP 방식).
-
+@mcp.tool(description=
+          """클라이언트 LLM이 선택한 위치로 지도 퀴즈를 생성합니다.
     Args:
         condition: 사용자가 요청한 문제의 조건
             - 문제 조건으로 특정 지역이 지정되면 정답 유형을 그에 속한 하위 행정구역이나 자연지형으로 할 것 
@@ -232,10 +222,20 @@ async def create_map_quiz(
         tags: 태그 목록 (선택)
     
     Returns:
-        퀴즈 ID와 지도 URL이 포함된 메시지 (SSE 스트리밍)
+        퀴즈 ID와 지도 URL이 포함된 메시지
         (반드시 message 문구를 그대로 사용자에게 보여주고, 마크다운 링크를 클릭 가능한 상태로 제공하시오. 
         이후 이미지 중점을 기준으로 출제했다는 것을 설명하고, '어떤 (국가/행정구역명, 시도/시군구/읍면동, 산/강/섬/바다 등)인가요?' 처럼 세부 정답 유형을 설명하시오.)
-    """
+    """)
+async def create_map_quiz(
+    condition: str,
+    iskorea: bool,
+    quiz_type: str,
+    lat: float,
+    lon: float,
+    zoom: int = 12,
+    tags: list = None,
+) -> str:
+
     try:
         print(f"[GeoQuiz] create_map_quiz 호출: condition={condition}, lat={lat}, lon={lon}, zoom={zoom}")
         
@@ -285,11 +285,8 @@ async def create_map_quiz(
         raise ValueError(error_msg)
 
 
-@mcp.tool(description="Request hints for a specific quiz by quiz_id. Provides clues without revealing the exact answer.")
-def request_hint(quiz_id: str) -> Dict[str, object]:
-    """quiz_id의 힌트를 제공합니다 (Streamable HTTP 방식).
-    힌트에 정답과 동일하거나 유사한 단어가 포함될 경우 다른 힌트를 제시하시오.
-    """
+@mcp.tool(description="quiz_id의 힌트를 제공합니다. 힌트에 정답과 동일하거나 유사한 단어가 포함될 경우 다른 힌트를 제시합니다.")
+def request_hint(quiz_id: str, hint: str) -> Dict[str, object]:
     try:
         print(f"[GeoQuiz] request_hint 호출: quiz_id={quiz_id}")
         record = store.get(quiz_id)
@@ -303,14 +300,14 @@ def request_hint(quiz_id: str) -> Dict[str, object]:
             "quiz_type": quiz_type,
             "center": {"lon": lon, "lat": lat},
             "condition": condition,
+            "hint": hint,
         }
         return hint
     except Exception as e:
         raise ValueError(f"오류 발생: {str(e)}")
 
-@mcp.tool(description="Get the answer for a specific quiz by quiz_id. Returns complete answer with map link and explanation.")
+@mcp.tool(description="quiz_id의 정답을 제공합니다. 정답에는 하이브리드 지도 링크와 해설이 포함됩니다.")
 def request_answer(quiz_id: str) -> Dict[str, object]:
-    """정답(하이브리드 지도 링크 및 해설)을 제공합니다 (Streamable HTTP 방식)."""
     try:
         print(f"[GeoQuiz] request_answer 호출: quiz_id={quiz_id}")
         record = store.get(quiz_id)
