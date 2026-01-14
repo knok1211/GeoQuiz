@@ -194,4 +194,4 @@ def request_answer(quiz_id: str) -> Dict[str, object]:
 
 if __name__ == "__main__":
 
-    mcp.run(transport="streamable-http",path="https://geoquiz.fastmcp.app/mcp",)
+    mcp.run(transport="streamable-http")
