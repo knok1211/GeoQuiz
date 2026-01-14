@@ -50,9 +50,15 @@ class QuizStore:
         return self._store[quiz_id]
 
 
-mcp = FastMCP("GeoQuiz MCP Server (VWorld)")
+mcp = FastMCP("GeoQuiz MCP Server (VWorld)", dependencies=["geopy"])
 app = mcp
 store = QuizStore()
+
+# CORS 설정 추가 (playMCP 연동을 위해)
+@mcp.get("/health")
+async def health_check():
+    """Health check endpoint for playMCP"""
+    return {"status": "ok", "service": "GeoQuiz MCP Server"}
 
 
 @mcp.tool()
