@@ -124,13 +124,17 @@ TOOL_USAGE_GUIDE = """{
       "name": "request_hint",
       "description": "특정 퀴즈의 힌트 제공",
       "input": {
-        "quiz_id": "create_map_quiz에서 반환된 quiz_id"
+        "quiz_id": "create_map_quiz에서 반환된 quiz_id",
+        "request": "string - 요청하는 힌트의 종류 (예: '자연지형', '행정구역', '랜드마크' 등)"
       },
       "returns": {
-        "quiz_id": "string",
-        "quiz_type": "string - 정답 유형",
-        "center": "object {lon: float, lat: float}",
-        "condition": "string - 원본 요청"
+        "type": "string message",
+        "contains": [
+          "quiz_id",
+          "center 좌표",
+          "quiz_type",
+          "요청한 힌트 정보"
+        ]
       }
     },
     {
