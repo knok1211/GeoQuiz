@@ -2,6 +2,9 @@
 
 VWorld(국토부 브이월드) 기반 위성지도 퀴즈 MCP 서버입니다. FastMCP로 배포하며, 조건에 맞는 퀴즈 생성/힌트/정답 제공 도구를 노출합니다.
 
+실행 링크
+https://playmcp.kakao.com/mcp/454
+
 # 서버 실행
 server.py
 ```
